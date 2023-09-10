@@ -31,3 +31,38 @@
     transform: rotate(360deg);
   }
 }
+
+.post_title {
+  display: flex;
+  justify-content: space-between;
+}
+
+.title_content {
+  flex-grow: 2;
+  text-align: left;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.post_buttons {
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.post_content {
+  margin-bottom: 20px;
+}
+.post_content > p {
+  font-style: italic;
+}
+.post_image{
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+
+.post_image > img {
+  width: 400px;
+  height: 200px;
+}

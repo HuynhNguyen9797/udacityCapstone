@@ -14,7 +14,7 @@ import {
   Loader,
   GridRow,
   GridColumn,
-  Form
+  Form,
 } from 'semantic-ui-react'
 
 import {
@@ -39,7 +39,7 @@ interface PostsState {
   newPostContent: string
   loadingPosts: boolean
   file: any
-  uploadState: boolean
+  isFetching: boolean
 }
 
 export class Posts extends React.PureComponent<PostsProps, PostsState> {
@@ -48,7 +48,7 @@ export class Posts extends React.PureComponent<PostsProps, PostsState> {
     newPostTitle: '',
     newPostContent: '',
     loadingPosts: true,
-    uploadState: false,
+    isFetching: false,
     file: null
   }
 
@@ -78,6 +78,9 @@ export class Posts extends React.PureComponent<PostsProps, PostsState> {
         alert('Upload a image file')
         return
       }
+      this.setState({
+        isFetching: true
+      })
       const newPost = await createPost(this.props.auth.getIdToken(), {
         post_title: this.state.newPostTitle.trim(),
         post_content: this.state.newPostContent.trim()
@@ -94,7 +97,7 @@ export class Posts extends React.PureComponent<PostsProps, PostsState> {
         ],
         newPostTitle: '',
         newPostContent: '',
-        uploadState: false,
+        isFetching: false,
         file: null
       })
     } catch (e: any) {
@@ -117,7 +120,6 @@ export class Posts extends React.PureComponent<PostsProps, PostsState> {
   async componentDidMount() {
     try {
       const posts = await getPosts(this.props.auth.getIdToken())
-      console.log(posts)
       this.setState({
         posts,
         loadingPosts: false
@@ -176,73 +178,108 @@ export class Posts extends React.PureComponent<PostsProps, PostsState> {
         <Grid.Column width={16}>
           <Divider />
         </Grid.Column>
+        {this.state.isFetching && this.renderLoading('Creating new post')}
       </Grid.Row>
     )
   }
 
   renderPosts() {
     if (this.state.loadingPosts) {
-      return this.renderLoading()
+      return this.renderLoading('Loading Posts')
     }
 
     return this.renderPostsList()
   }
 
-  renderLoading() {
+  renderLoading(text: string) {
     return (
       <Grid.Row>
         <Loader indeterminate active inline="centered">
-          Loading TODOs
+          {text}
         </Loader>
       </Grid.Row>
     )
   }
 
   renderPostsList() {
-    return (
-      <Grid padded>
-        {this.state.posts.map((post) => {
-          return (
-            <Grid.Row key={post.post_id}>
-              <Grid.Row >
-                <Grid.Column width={14}>
-                  {post.post_title}
-                </Grid.Column>
-                <Grid.Column width={1} floated="right">
-                  <Button
-                    icon
-                    color="blue"
-                    onClick={() => this.onEditButtonClick(post.post_id)}
-                  >
-                    <Icon name="pencil" />
-                  </Button>
-                </Grid.Column>
-                <Grid.Column width={1} floated="right">
-                  <Button
-                    icon
-                    color="red"
-                    onClick={() => this.onPostDelete(post.post_id)}
-                  >
-                    <Icon name="delete" />
-                  </Button>
-                </Grid.Column>
-              </Grid.Row>
-              <Grid.Row width={16} verticalAlign='middle'>
-                {post.post_content}
-              </Grid.Row>
-              <Grid.Row>
-              {post.attachmentUrl && (
-                <Image src={post.attachmentUrl} size="small" wrapped />
-              )}
-              </Grid.Row>
-              <Grid.Column width={16}>
-                <Divider />
-              </Grid.Column>
-            </Grid.Row>
-          )
-        })}
-      </Grid>
-    )
+    return <div>
+      <h1 style={{textAlign: 'center'}}>Recent Posts</h1>
+      <Divider/>
+      {
+        this.state.posts.map((post) => <div key = {post.post_id}>
+          <div className='post_title'>
+            <h3 className='title_content'>{post.post_title}</h3>
+            <div className='post_buttons'>
+            <Button
+            icon
+            color='blue'
+            onClick={() => this.onEditButtonClick(post.post_id)}
+            >
+              <Icon name="pencil" />
+            </Button>
+            <Button
+            icon
+            color='red'
+            onClick={() => this.onPostDelete(post.post_id)}
+            >
+              <Icon name="delete" />
+            </Button>
+            </div>
+          </div>
+          <div className='post_content'>
+            <p>{post.post_content}</p>
+          </div>
+          <div className='post_image'>
+          {post.attachmentUrl && (
+              <img src={post.attachmentUrl} alt="" />
+            )}
+          </div>
+          <Divider />
+        </div>)
+      }
+    </div>
+    // return (
+    //     {this.state.posts.map((post) => {
+    //       return (
+    //         <Grid.Row key={post.post_id}>
+    //           <Grid.Row >
+    //             <Grid.Column width={14}>
+    //               {post.post_title}
+    //             </Grid.Column>
+    //             <Grid.Column width={1} floated="right">
+    //               <Button
+    //                 icon
+    //                 color="blue"
+    //                 onClick={() => this.onEditButtonClick(post.post_id)}
+    //               >
+    //                 <Icon name="pencil" />
+    //               </Button>
+    //             </Grid.Column>
+    //             <Grid.Column width={1} floated="right">
+    //               <Button
+    //                 icon
+    //                 color="red"
+    //                 onClick={() => this.onPostDelete(post.post_id)}
+    //               >
+    //                 <Icon name="delete" />
+    //               </Button>
+    //             </Grid.Column>
+    //           </Grid.Row>
+    //           <Grid.Row width={16} verticalAlign='middle'>
+    //             {post.post_content}
+    //           </Grid.Row>
+    //           <Grid.Row>
+    //           {post.attachmentUrl && (
+    //             <Image src={post.attachmentUrl} size="small" wrapped />
+    //           )}
+    //           </Grid.Row>
+    //           <Grid.Column width={16}>
+    //             <Divider />
+    //           </Grid.Column>
+    //         </Grid.Row>
+    //       )
+    //     })}
+    // )
   }
 
   calculateDueDate(): string {
