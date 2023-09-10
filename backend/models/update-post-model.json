@@ -3,17 +3,18 @@
   "title": "group",
   "type": "object",
   "properties": {
-    "name": {
+    "post_title": {
       "type": "string",
       "minLength": 1
     },
-    "dueDate": {
-      "type": "string"
+    "post_content": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": [
-    "name",
-    "dueDate"
+    "post_title",
+    "post_content"
   ],
   "additionalProperties": false
 }

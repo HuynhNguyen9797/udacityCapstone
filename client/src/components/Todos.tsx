@@ -11,126 +11,168 @@ import {
   Icon,
   Input,
   Image,
-  Loader
+  Loader,
+  GridRow,
+  GridColumn,
+  Form
 } from 'semantic-ui-react'
 
-import { createTodo, deleteTodo, getTodos, patchTodo } from '../api/todos-api'
+import {
+  createPost,
+  deletePost,
+  getPosts,
+  getUploadUrl,
+  patchPost,
+  uploadFile
+} from '../api/posts-api'
 import Auth from '../auth/Auth'
-import { Todo } from '../types/Todo'
+import { PostItem } from '../types/Post'
 
-interface TodosProps {
+interface PostsProps {
   auth: Auth
   history: History
 }
 
-interface TodosState {
-  todos: Todo[]
-  newTodoName: string
-  loadingTodos: boolean
+interface PostsState {
+  posts: PostItem[]
+  newPostTitle: string
+  newPostContent: string
+  loadingPosts: boolean
+  file: any
+  uploadState: boolean
 }
 
-export class Todos extends React.PureComponent<TodosProps, TodosState> {
-  state: TodosState = {
-    todos: [],
-    newTodoName: '',
-    loadingTodos: true
+export class Posts extends React.PureComponent<PostsProps, PostsState> {
+  state: PostsState = {
+    posts: [],
+    newPostTitle: '',
+    newPostContent: '',
+    loadingPosts: true,
+    uploadState: false,
+    file: null
   }
 
-  handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ newTodoName: event.target.value })
+  handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ newPostTitle: event.target.value })
   }
 
-  onEditButtonClick = (todoId: string) => {
-    this.props.history.push(`/todos/${todoId}/edit`)
+  handleContentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ newPostContent: event.target.value })
   }
 
-  onTodoCreate = async (event: React.ChangeEvent<HTMLButtonElement>) => {
+  onEditButtonClick = (postId: string) => {
+    this.props.history.push(`/posts/${postId}/edit`)
+  }
+
+  handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files) return
+    this.setState({
+      file: files[0]
+    })
+  }
+
+  handleSubmit = async () => {
     try {
-      const dueDate = this.calculateDueDate()
-      const newTodo = await createTodo(this.props.auth.getIdToken(), {
-        name: this.state.newTodoName.trim(),
-        dueDate
+      if (this.state.file === null) {
+        alert('Upload a image file')
+        return
+      }
+      const newPost = await createPost(this.props.auth.getIdToken(), {
+        post_title: this.state.newPostTitle.trim(),
+        post_content: this.state.newPostContent.trim()
       })
+      const { imgPutUrl, attachmentUrl } = await getUploadUrl(
+        this.props.auth.getIdToken(),
+        newPost.post_id
+      )
+      await uploadFile(imgPutUrl, this.state.file)
       this.setState({
-        todos: [...this.state.todos, newTodo],
-        newTodoName: ''
+        posts: [
+          ...this.state.posts,
+          { ...newPost, attachmentUrl: attachmentUrl }
+        ],
+        newPostTitle: '',
+        newPostContent: '',
+        uploadState: false,
+        file: null
       })
-    } catch(e: any) {
-      alert('Todo creation failed')
+    } catch (e: any) {
+      console.log(e)
+      alert('Post creation failed')
     }
   }
 
-  onTodoDelete = async (todoId: string) => {
+  onPostDelete = async (postId: string) => {
     try {
-      await deleteTodo(this.props.auth.getIdToken(), todoId)
+      await deletePost(this.props.auth.getIdToken(), postId)
       this.setState({
-        todos: this.state.todos.filter(todo => todo.todoId !== todoId)
+        posts: this.state.posts.filter((post) => post.post_id !== postId)
       })
     } catch {
-      alert('Todo deletion failed')
-    }
-  }
-
-  onTodoCheck = async (pos: number) => {
-    try {
-      const todo = this.state.todos[pos]
-      await patchTodo(this.props.auth.getIdToken(), todo.todoId, {
-        name: todo.name,
-        dueDate: todo.dueDate,
-        done: !todo.done
-      })
-      this.setState({
-        todos: update(this.state.todos, {
-          [pos]: { done: { $set: !todo.done } }
-        })
-      })
-    } catch {
-      alert('Todo deletion failed')
+      alert('Post deletion failed')
     }
   }
 
   async componentDidMount() {
     try {
-      const todos = await getTodos(this.props.auth.getIdToken())
+      const posts = await getPosts(this.props.auth.getIdToken())
+      console.log(posts)
       this.setState({
-        todos,
-        loadingTodos: false
+        posts,
+        loadingPosts: false
       })
     } catch (e) {
-      alert(`Failed to fetch todos: ${(e as Error).message}`)
+      alert(`Failed to fetch posts: ${(e as Error).message}`)
     }
   }
 
   render() {
     return (
       <div>
-        <Header as="h1">TODOs</Header>
+        <Header as="h1" style={{ textAlign: 'center', marginTop: '10px' }}>
+          SOCIAL APP
+        </Header>
 
-        {this.renderCreateTodoInput()}
+        {this.renderCreatePostInput()}
 
-        {this.renderTodos()}
+        {this.renderPosts()}
       </div>
     )
   }
 
-  renderCreateTodoInput() {
+  renderCreatePostInput() {
     return (
       <Grid.Row>
-        <Grid.Column width={16}>
+        <h3>Please type in your post</h3>
+        <Grid.Column width={16} style={{ marginBottom: '10px' }}>
           <Input
-            action={{
-              color: 'teal',
-              labelPosition: 'left',
-              icon: 'add',
-              content: 'New task',
-              onClick: this.onTodoCreate
-            }}
             fluid
             actionPosition="left"
-            placeholder="To change the world..."
-            onChange={this.handleNameChange}
+            placeholder="Your post title..."
+            onChange={this.handleTitleChange}
           />
         </Grid.Column>
+        <Grid.Column width={16} style={{ marginBottom: '10px' }}>
+          <Input
+            fluid
+            actionPosition="left"
+            placeholder="Your post content..."
+            onChange={this.handleContentChange}
+          />
+        </Grid.Column>
+        <Grid.Column style={{ marginBottom: '10px' }}>
+          <Form.Field>
+            <label>File</label>
+            <input
+              type="file"
+              accept="image/*"
+              placeholder="Image to upload"
+              onChange={this.handleFileChange}
+            />
+          </Form.Field>
+        </Grid.Column>
+        <Grid.Column>{this.renderButton()}</Grid.Column>
         <Grid.Column width={16}>
           <Divider />
         </Grid.Column>
@@ -138,12 +180,12 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     )
   }
 
-  renderTodos() {
-    if (this.state.loadingTodos) {
+  renderPosts() {
+    if (this.state.loadingPosts) {
       return this.renderLoading()
     }
 
-    return this.renderTodosList()
+    return this.renderPostsList()
   }
 
   renderLoading() {
@@ -156,45 +198,43 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     )
   }
 
-  renderTodosList() {
+  renderPostsList() {
     return (
       <Grid padded>
-        {this.state.todos.map((todo, pos) => {
+        {this.state.posts.map((post) => {
           return (
-            <Grid.Row key={todo.todoId}>
-              <Grid.Column width={1} verticalAlign="middle">
-                <Checkbox
-                  onChange={() => this.onTodoCheck(pos)}
-                  checked={todo.done}
-                />
-              </Grid.Column>
-              <Grid.Column width={10} verticalAlign="middle">
-                {todo.name}
-              </Grid.Column>
-              <Grid.Column width={3} floated="right">
-                {todo.dueDate}
-              </Grid.Column>
-              <Grid.Column width={1} floated="right">
-                <Button
-                  icon
-                  color="blue"
-                  onClick={() => this.onEditButtonClick(todo.todoId)}
-                >
-                  <Icon name="pencil" />
-                </Button>
-              </Grid.Column>
-              <Grid.Column width={1} floated="right">
-                <Button
-                  icon
-                  color="red"
-                  onClick={() => this.onTodoDelete(todo.todoId)}
-                >
-                  <Icon name="delete" />
-                </Button>
-              </Grid.Column>
-              {todo.attachmentUrl && (
-                <Image src={todo.attachmentUrl} size="small" wrapped />
+            <Grid.Row key={post.post_id}>
+              <Grid.Row >
+                <Grid.Column width={14}>
+                  {post.post_title}
+                </Grid.Column>
+                <Grid.Column width={1} floated="right">
+                  <Button
+                    icon
+                    color="blue"
+                    onClick={() => this.onEditButtonClick(post.post_id)}
+                  >
+                    <Icon name="pencil" />
+                  </Button>
+                </Grid.Column>
+                <Grid.Column width={1} floated="right">
+                  <Button
+                    icon
+                    color="red"
+                    onClick={() => this.onPostDelete(post.post_id)}
+                  >
+                    <Icon name="delete" />
+                  </Button>
+                </Grid.Column>
+              </Grid.Row>
+              <Grid.Row width={16} verticalAlign='middle'>
+                {post.post_content}
+              </Grid.Row>
+              <Grid.Row>
+              {post.attachmentUrl && (
+                <Image src={post.attachmentUrl} size="small" wrapped />
               )}
+              </Grid.Row>
               <Grid.Column width={16}>
                 <Divider />
               </Grid.Column>
@@ -210,5 +250,13 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     date.setDate(date.getDate() + 7)
 
     return dateFormat(date, 'yyyy-mm-dd') as string
+  }
+
+  renderButton() {
+    return (
+      <div>
+        <Button onClick={() => this.handleSubmit()}>Submit</Button>
+      </div>
+    )
   }
 }
