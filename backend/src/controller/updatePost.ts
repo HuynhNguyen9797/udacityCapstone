@@ -1,20 +1,23 @@
 import 'source-map-support/register'
+
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
-import { deletePost } from '../../helpers/posts'
-import { getUserId } from '../utils'
+
+import { updatePost } from '../bussinesLogic/posts'
+import { UpdatePostRequest } from '../requests/UpdatePostRequest'
+import { getUserId } from './utils'
 
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const todoId = event.pathParameters.postId
+    const postId = event.pathParameters.postId
+    const updatedPost: UpdatePostRequest = JSON.parse(event.body)
     const userId = getUserId(event)
-    await deletePost(userId, todoId)
+
+    await updatePost(userId, postId, updatedPost)
+
     return {
-      statusCode: 202,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
+      statusCode: 200,
       body: JSON.stringify({})
     }
   }

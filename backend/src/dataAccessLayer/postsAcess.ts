@@ -4,7 +4,7 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { createLogger } from '../utils/logger'
 import { PostItem } from '../models/Post/post.model'
 import { PostUpdate } from '../models/Post/post-update.model'
-import { AttachmentUtils } from './attachmentUtils'
+import { AttachmentUtils } from '../fileStorage/attachmentUtils'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 

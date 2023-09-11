@@ -1,4 +1,4 @@
-import { PostAccess } from './postsAcess'
+import { PostAccess } from '../dataAccessLayer/postsAcess'
 import { CreatePostRequest } from '../requests/CreatePostRequest'
 import { UpdatePostRequest } from '../requests/UpdatePostRequest'
 import { createLogger } from '../utils/logger'
